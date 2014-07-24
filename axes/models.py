@@ -1,6 +1,11 @@
 from django.db import models
 from django.utils import six
 
+from .utils import get_session_model
+
+Session = get_session_model()
+
+
 class CommonAccess(models.Model):
     user_agent = models.CharField(
         max_length=255,
@@ -67,6 +72,9 @@ class AccessLog(CommonAccess):
         null=True,
         blank=True,
     )
+    session = models.ForeignKey(Session,
+                                null=True,
+                                on_delete=models.SET_NULL)
 
     def __unicode__(self):
         return six.u('Access Log for %s @ %s') % (self.username, self.attempt_time)

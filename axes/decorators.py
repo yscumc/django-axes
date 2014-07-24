@@ -30,6 +30,7 @@ from axes.signals import user_locked_out
 import axes
 from django.utils import six
 
+Session = axes.utils.get_session_model()
 
 # see if the user has overridden the failure limit
 FAILURE_LIMIT = getattr(settings, 'AXES_LOGIN_FAILURE_LIMIT', 3)
@@ -263,6 +264,11 @@ def watch_login(func):
                 not response.has_header('location') and
                 response.status_code != 302
             )
+            
+            try:
+                session_key = request.session.session_key
+            except AttributeError:
+                session_key = None
 
             access_log = AccessLog.objects.create(
                 user_agent=request.META.get('HTTP_USER_AGENT', '<unknown>')[:255],
@@ -271,6 +277,7 @@ def watch_login(func):
                 http_accept=request.META.get('HTTP_ACCEPT', '<unknown>'),
                 path_info=request.META.get('PATH_INFO', '<unknown>'),
                 trusted=not login_unsuccessful,
+                session_id=session_key,
             )
             if check_request(request, login_unsuccessful):
                 return response

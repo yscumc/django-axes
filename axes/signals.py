@@ -23,12 +23,18 @@ def log_user_lockout(sender, request, user, signal, *args, **kwargs):
         # Django < 1.5
         username = user.username
 
+    try:
+        session_key = request.session.session_key
+    except AttributeError:
+        session_key = None
+
     access_logs = AccessLog.objects.filter(
-        username=username,
+        # Don't filter by username because it can be changed during an open session
+        # username=username,
         logout_time__isnull=True,
+        session_id=session_key,
     ).order_by('-attempt_time')
 
-    if access_logs:
-        access_log = access_logs[0]
-        access_log.logout_time = now()
-        access_log.save()
+    # There can be more than one AccessLog record if the user logged in
+    # more than once in the same session
+    access_logs.update(logout_time=now())
